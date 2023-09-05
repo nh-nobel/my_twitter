@@ -1,8 +1,12 @@
 from django.shortcuts import render, redirect 
 from django.contrib import messages 
 from .models import Profile, Meep 
-from .forms import MeepForm 
+from .forms import MeepForm, SignUpForm, ProfilePicForm, UserUpdateForm
 from django.contrib.auth import authenticate, login, logout 
+from django.contrib.auth.forms import UserCreationForm 
+from django import forms 
+from django.contrib.auth.models import User 
+from django.contrib.auth import update_session_auth_hash
 
 # Create your views here.
 def home(request): 
@@ -79,4 +83,91 @@ def logout_user(request):
 	return redirect('home')
 
 def register_user(request):
-	return render(request, "register.html")
+	form = SignUpForm() 
+	if request.method=="POST":
+		form=SignUpForm(request.POST)
+		if form.is_valid():
+			form.save()
+			username=form.cleaned_data['username']
+			password = form.cleaned_data['password1']
+			# first_name = form.cleaned_data['first_name']
+			# second_name = form.cleaned_data['second_name']
+			# email = form.cleaned_data['email']
+			# Log in user 
+			user = authenticate(username=username, password=password)
+			login(request,user)
+			messages.success(request, ("You have successfully registered! Welcome!"))
+			return redirect('home')
+	return render(request, "register.html", {'form':form}) 
+
+
+# def update_user(request):
+# 	if request.user.is_authenticated:
+# 		current_user = User.objects.get(id=request.user.id)
+# 		profile_user = Profile.objects.get(user__id=request.user.id)
+# 		# Get Forms
+# 		user_form = SignUpForm(request.POST or None, request.FILES or None, instance=current_user)
+# 		profile_form = ProfilePicForm(request.POST or None, request.FILES or None, instance=profile_user)
+# 		if user_form.is_valid() and profile_form.is_valid():
+# 			user_form.save()
+# 			profile_form.save()
+
+# 			login(request, current_user)
+# 			messages.success(request, ("Your Profile Has Been Updated!"))
+# 			return redirect('home')
+
+# 		return render(request, "update_user.html", {'user_form':user_form, 'profile_form':profile_form})
+# 	else:
+# 		messages.success(request, ("You Must Be Logged In To View That Page..."))
+# 		return redirect('home')
+
+
+# def update_user(request):
+# 	if request.user.is_authenticated:
+# 		current_user = User.objects.get(id=request.user.id)
+# 		profile_user = Profile.objects.get(user__id=request.user.id)
+		
+# 		if request.method == 'POST':
+# 			user_form = UserUpdateForm(request.POST, instance=current_user)
+            
+# 			if user_form.is_valid():
+# 				user_form.save()
+# 				messages.success(request, "Your Profile Has Been Updated!")
+# 				return redirect('home')
+
+# 			else:
+# 				user_form = UserUpdateForm(instance=current_user)
+
+# 		return render(request, "update_user.html", {'user_form': user_form})
+# 	else:
+# 		messages.success(request, "You Must Be Logged In To View That Page...")
+# 		return redirect('home')
+
+
+
+
+def update_user(request):
+    if request.user.is_authenticated:
+        current_user = User.objects.get(id=request.user.id)
+        profile_user = Profile.objects.get(user__id=request.user.id)
+
+        if request.method == 'POST':
+            user_form = UserUpdateForm(request.POST, instance=current_user)
+            profile_form = ProfilePicForm(request.POST, request.FILES, instance=profile_user)
+
+            if user_form.is_valid() and profile_form.is_valid():
+                user_form.save()
+                profile_form.save()
+                messages.success(request, "Your Profile Has Been Updated!")
+                return redirect('home')
+
+        else:
+            user_form = UserUpdateForm(instance=current_user)
+            profile_form = ProfilePicForm(instance=profile_user)
+
+        return render(request, "update_user.html", {'user_form': user_form, 'profile_form': profile_form})
+    else:
+        messages.success(request, "You Must Be Logged In To View That Page...")
+        return redirect('home')
+
+
